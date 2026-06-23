@@ -1,11 +1,8 @@
 // src/pages/Home.jsx
-import React from 'react';
 import { Link } from 'react-router-dom';
 import ScrollReveal from '../components/ScrollReveal.jsx';
 import HeroSection from '../components/Hero.jsx';
 import MenuDisplay from '../components/MenuDisplay.jsx';
-
-import { useEffect } from 'react';
 
 // Single Home component — ensure scroll to top on mount
 // (behavior uses 'auto' for compatibility)

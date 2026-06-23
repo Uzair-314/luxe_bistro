@@ -1,16 +1,40 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { MENU_CATEGORIES, MENU_ITEMS } from './menuData';
+import { useMenuItems } from '../hooks/useSupabase';
 import { useApp } from '../hooks/useApp';
 import ScrollReveal from './ScrollReveal.jsx';
 
+const MENU_CATEGORIES = ['All', 'Starters', 'Mains', 'Desserts', 'Drinks'];
+
 export default function MenuDisplay() {
   const { addToCart } = useApp();
+  const { items, loading, error } = useMenuItems();
   const [activeCategory, setActiveCategory] = useState('All');
 
   const filteredItems = activeCategory === 'All'
-    ? MENU_ITEMS
-    : MENU_ITEMS.filter(item => item.category === activeCategory);
+    ? items
+    : items.filter(item => item.category === activeCategory);
+
+  if (loading) {
+    return (
+      <section id="menu-preview" className="py-24 bg-bistro-cream px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-bistro-terracotta mx-auto"></div>
+          <p className="mt-4 font-dm text-bistro-sage">Loading menu...</p>
+        </div>
+      </section>
+    );
+  }
+
+  if (error) {
+    return (
+      <section id="menu-preview" className="py-24 bg-bistro-cream px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto text-center text-red-600">
+          <p>Failed to load menu. Please try again later.</p>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section id="menu-preview" className="py-24 bg-bistro-cream px-4 sm:px-6 lg:px-8 overflow-hidden">
@@ -54,7 +78,7 @@ export default function MenuDisplay() {
           </div>
         </ScrollReveal>
 
-        {/* Menu Grid - Each card animates individually on scroll */}
+        {/* Menu Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-12 gap-y-10">
           {filteredItems.map((item) => (
             <ScrollReveal key={item.id} direction="up" delay={0}>
@@ -62,7 +86,7 @@ export default function MenuDisplay() {
                 {/* Image */}
                 <div className="w-24 h-24 rounded-lg bg-bistro-espresso/10 flex-shrink-0 overflow-hidden">
                   <img 
-                    src={item.image} 
+                    src={item.image_url || item.image} 
                     alt={item.name}
                     className="w-full h-full object-cover"
                     onError={(e) => { e.target.style.display = 'none'; }}
@@ -74,7 +98,7 @@ export default function MenuDisplay() {
                     <div className="flex items-baseline justify-between mb-2">
                       <h3 className="font-playfair text-xl text-bistro-espresso tracking-wide flex items-center gap-2">
                         {item.name}
-                        {item.isChefSpecial && (
+                        {item.is_chef_special && (
                           <span className="font-dm text-[9px] tracking-widest uppercase bg-bistro-terracotta/10 text-bistro-terracotta px-2 py-0.5 rounded font-bold">
                             Chef's Special
                           </span>

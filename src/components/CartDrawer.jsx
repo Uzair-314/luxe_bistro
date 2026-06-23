@@ -8,7 +8,7 @@ export default function CartDrawer() {
     updateQuantity, 
     removeFromCart, 
     cartTotal, 
-    cartCount,
+    cartItemCount,
     isCartOpen, 
     closeCart,
     openCheckout 
@@ -32,7 +32,7 @@ export default function CartDrawer() {
             <ShoppingBag className="w-5 h-5 text-[#8e4a0e]" />
             <h2 className="font-playfair text-xl text-[#2d2420]">Your Cart</h2>
             <span className="bg-[#8e4a0e]/10 text-[#8e4a0e] text-sm px-2 py-0.5 rounded-full">
-              {cartCount}
+              {cartItemCount}
             </span>
           </div>
           <button
@@ -55,7 +55,7 @@ export default function CartDrawer() {
               {cart.map(item => (
                 <div key={item.id} className="flex gap-4 bg-[#faf7f2] rounded-lg p-3">
                   <img 
-                    src={item.image} 
+                    src={item.image_url || item.image} 
                     alt={item.name}
                     className="w-20 h-20 object-cover rounded-lg"
                   />

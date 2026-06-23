@@ -1,4 +1,3 @@
-import React from 'react';
 import ScrollReveal from '../components/ScrollReveal.jsx';
 import MenuDisplay from '../components/MenuDisplay.jsx';
 

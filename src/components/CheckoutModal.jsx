@@ -4,8 +4,9 @@ import { useApp } from '../hooks/useApp';
 import { X, Truck, Package, Check, User, Phone, Home, Building, ChefHat, UtensilsCrossed, MapPin } from 'lucide-react';
 
 export default function CheckoutModal() {
-  const { isCheckoutOpen, closeCheckout, orderType, setOrderType, cart, cartTotal, setOrder, clearCart } = useApp();
+  const { isCheckoutOpen, closeCheckout, orderType, setOrderType, cart, cartTotal, setOrder, clearCart, openTracking } = useApp();
   const [step, setStep] = useState('selection');
+  const [orderReceipt, setOrderReceipt] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
@@ -41,6 +42,15 @@ export default function CheckoutModal() {
     };
     
     setOrder(newOrder);
+    setOrderReceipt({
+      number: orderNumber,
+      estimatedTime,
+      items: [...cart],
+      subtotal: cartTotal,
+      gratuity,
+      tax,
+      total: finalTotal
+    });
     clearCart();
     setStep('success');
   };
@@ -48,6 +58,7 @@ export default function CheckoutModal() {
   const handleClose = () => {
     closeCheckout();
     setStep('selection');
+    setOrderReceipt(null);
     setFormData({ name: '', phone: '', address: '', city: '', notes: '' });
   };
 
@@ -165,11 +176,11 @@ export default function CheckoutModal() {
               <div className="grid grid-cols-2 gap-6 mb-6">
                 <div>
                   <span className="text-[10px] uppercase tracking-[0.2em] text-[#6b5b4f] font-dm font-medium">Order Number</span>
-                  <p className="font-playfair text-lg text-[#8e4a0e] mt-1">LB-2024-9982</p>
+                  <p className="font-playfair text-lg text-[#8e4a0e] mt-1">{orderReceipt?.number}</p>
                 </div>
                 <div className="text-right">
                   <span className="text-[10px] uppercase tracking-[0.2em] text-[#6b5b4f] font-dm font-medium">Estimated Arrival</span>
-                  <p className="font-playfair text-lg text-[#2d2420] mt-1">19:45 PM</p>
+                  <p className="font-playfair text-lg text-[#2d2420] mt-1">{orderReceipt?.estimatedTime}</p>
                 </div>
               </div>
               <div className="w-full h-px bg-[#e8ddd4] mb-6" />
@@ -194,29 +205,39 @@ export default function CheckoutModal() {
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
-                <button className="bg-[#8e4a0e] text-white py-3 rounded-lg text-xs uppercase tracking-[0.15em] font-dm font-medium hover:bg-[#6d3a0b]">Track Your Order</button>
+                <button 
+                  onClick={() => {
+                    openTracking();
+                    handleClose();
+                  }}
+                  className="bg-[#8e4a0e] text-white py-3 rounded-lg text-xs uppercase tracking-[0.15em] font-dm font-medium hover:bg-[#6d3a0b]"
+                >
+                  Track Your Order
+                </button>
                 <button className="border border-[#e8ddd4] text-[#2d2420] py-3 rounded-lg text-xs uppercase tracking-[0.15em] font-dm font-medium hover:border-[#8e4a0e] hover:text-[#8e4a0e]">Modify Order</button>
               </div>
             </div>
 
-            <div className="bg-[#faf7f2] rounded-xl p-6">
-              <h3 className="font-playfair text-lg text-[#2d2420] mb-4">Summary</h3>
-              <div className="space-y-3 mb-4">
-                {cart.map(item => (
-                  <div key={item.id} className="flex justify-between text-sm font-dm">
-                    <div><span className="text-[#2d2420]">{item.name}</span><span className="text-[#6b5b4f] text-xs ml-1">x{item.quantity}</span></div>
-                    <span className="text-[#2d2420]">${(item.price * item.quantity).toFixed(2)}</span>
-                  </div>
-                ))}
-                <div className="w-full h-px bg-[#e8ddd4]" />
-                <div className="flex justify-between text-sm font-dm"><span className="text-[#6b5b4f]">Subtotal</span><span className="text-[#2d2420]">${cartTotal.toFixed(2)}</span></div>
-                <div className="flex justify-between text-sm font-dm"><span className="text-[#6b5b4f]">Gratuity (18%)</span><span className="text-[#2d2420]">${gratuity.toFixed(2)}</span></div>
+            {orderReceipt && (
+              <div className="bg-[#faf7f2] rounded-xl p-6">
+                <h3 className="font-playfair text-lg text-[#2d2420] mb-4">Summary</h3>
+                <div className="space-y-3 mb-4">
+                  {orderReceipt.items.map(item => (
+                    <div key={item.id} className="flex justify-between text-sm font-dm">
+                      <div><span className="text-[#2d2420]">{item.name}</span><span className="text-[#6b5b4f] text-xs ml-1">x{item.quantity}</span></div>
+                      <span className="text-[#2d2420]">${(item.price * item.quantity).toFixed(2)}</span>
+                    </div>
+                  ))}
+                  <div className="w-full h-px bg-[#e8ddd4]" />
+                  <div className="flex justify-between text-sm font-dm"><span className="text-[#6b5b4f]">Subtotal</span><span className="text-[#2d2420]">${orderReceipt.subtotal.toFixed(2)}</span></div>
+                  <div className="flex justify-between text-sm font-dm"><span className="text-[#6b5b4f]">Gratuity (18%)</span><span className="text-[#2d2420]">${orderReceipt.gratuity.toFixed(2)}</span></div>
+                </div>
+                <div className="flex justify-between items-center pt-3 border-t border-[#e8ddd4]">
+                  <span className="font-playfair text-lg text-[#2d2420]">Total</span>
+                  <span className="font-playfair text-xl text-[#8e4a0e]">${orderReceipt.total.toFixed(2)}</span>
+                </div>
               </div>
-              <div className="flex justify-between items-center pt-3 border-t border-[#e8ddd4]">
-                <span className="font-playfair text-lg text-[#2d2420]">Total</span>
-                <span className="font-playfair text-xl text-[#8e4a0e]">${finalTotal.toFixed(2)}</span>
-              </div>
-            </div>
+            )}
 
             <div className="mt-6 relative rounded-xl overflow-hidden h-32">
               <img src="https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=800&h=200&fit=crop" alt="Restaurant ambiance" className="w-full h-full object-cover" />

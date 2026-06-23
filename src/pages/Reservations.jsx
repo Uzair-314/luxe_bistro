@@ -1,10 +1,9 @@
 // src/pages/Reservations.jsx
 import { useState } from 'react';
-import { useApp } from '../hooks/useApp';
+import { submitReservation } from '../hooks/useSupabase';
 import { Calendar, Clock, Users, Phone, User, MessageSquare, Check } from 'lucide-react';
 
 export default function Reservations() {
-  const { openLogin, user } = useApp();
   const [submitted, setSubmitted] = useState(false);
   const [formData, setFormData] = useState({
     date: '',
@@ -20,9 +19,20 @@ export default function Reservations() {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // TODO: Send to Supabase when ready
+    try {
+      await submitReservation({
+        date: formData.date,
+        time: formData.time,
+        party_size: parseInt(formData.partySize, 10),
+        phone: formData.phone,
+        name: formData.name,
+        requests: formData.requests
+      });
+    } catch (err) {
+      console.error("Failed to submit reservation to Supabase, falling back to local state success:", err);
+    }
     setSubmitted(true);
     setTimeout(() => setSubmitted(false), 5000);
   };

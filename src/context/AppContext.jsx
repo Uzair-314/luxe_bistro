@@ -1,7 +1,6 @@
 // src/context/AppContext.jsx
-import { createContext, useContext, useState, useEffect } from 'react';
-
-export const AppContext = createContext();
+import { useState, useEffect } from 'react';
+import { AppContext } from './AppContextObject';
 
 export function AppProvider({ children }) {
   const [cart, setCart] = useState(() => {
@@ -86,4 +85,3 @@ export function AppProvider({ children }) {
     </AppContext.Provider>
   );
 }
-export const useApp = () => useContext(AppContext);

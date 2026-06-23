@@ -1,5 +1,5 @@
 // src/components/Header.jsx
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useApp } from '../hooks/useApp';
 import { MapPin } from 'lucide-react';
@@ -21,8 +21,10 @@ export default function Header() {
   }, []);
 
   useEffect(() => {
-    setIsMobileMenuOpen(false);
-  }, [location]);
+    if (isMobileMenuOpen) {
+      setIsMobileMenuOpen(false);
+    }
+  }, [location, isMobileMenuOpen]);
 
   const navLinks = [
     { path: '/', label: 'Home' },
