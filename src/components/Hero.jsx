@@ -9,7 +9,7 @@ export default function HeroSection() {
         <img 
           alt="Luxe Bistro Fine Dining" 
           className="w-full h-full object-cover object-center opacity-100 select-none pointer-events-none animate-kenburns" 
-          src="https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=1920&h=1080&fit=crop"
+          src="https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?q=80&w=2070&auto=format&fit=crop"
         />
         <div className="absolute inset-0 bg-bistro-espresso/50"></div>
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-bistro-espresso"></div>
@@ -17,7 +17,7 @@ export default function HeroSection() {
 
       {/* Content */}
       <div className="relative z-10 max-w-4xl px-4 mt-16">
-        <span className="block font-dm text-xs sm:text-sm tracking-[0.4em] text-bistro-terracotta uppercase mb-5 font-semibold">
+        <span className="block font-dm text-xs sm:text-sm tracking-[0.4em] text-bistro-cream uppercase mb-5 font-semibold">
           A Culinary Journey Awaits
         </span>
 

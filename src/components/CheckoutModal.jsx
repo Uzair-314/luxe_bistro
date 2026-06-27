@@ -1,14 +1,18 @@
 // src/components/CheckoutModal.jsx
 import { useState } from 'react';
 import { useApp } from '../hooks/useApp';
-import { X, Truck, Package, Check, User, Phone, Home, Building, ChefHat, UtensilsCrossed, MapPin } from 'lucide-react';
+import { supabase } from '../lib/supabaseClient';
+import { X, Truck, Package, Check, User, Phone, Mail, Home, Building, ChefHat, UtensilsCrossed, MapPin, Loader2 } from 'lucide-react';
 
 export default function CheckoutModal() {
-  const { isCheckoutOpen, closeCheckout, orderType, setOrderType, cart, cartTotal, setOrder, clearCart, openTracking } = useApp();
+  const { isCheckoutOpen, closeCheckout, orderType, setOrderType, cart, cartTotal, setOrder, clearCart, openTracking, openLogin } = useApp();
   const [step, setStep] = useState('selection');
   const [orderReceipt, setOrderReceipt] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
+    email: '',
     phone: '',
     address: '',
     city: '',
@@ -22,15 +26,71 @@ export default function CheckoutModal() {
     setStep('form');
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    
+    setSubmitError(null);
+
+    if (!formData.name.trim() || !formData.email.trim() || !formData.phone.trim()) {
+      setSubmitError('Please fill in all required fields.');
+      return;
+    }
+
+    // Phone validation — international format (e.g., +1 (555) 000-0000, +92 300 1234567)
+    const phoneRegex = /^\+?[0-9\s\-()]{7,20}$/;
+    if (!phoneRegex.test(formData.phone.trim())) {
+      setSubmitError('Please enter a valid phone number (e.g., +1 (555) 000-0000).');
+      return;
+    }
+
+    if (orderType === 'delivery' && (!formData.address.trim() || !formData.city.trim())) {
+      setSubmitError('Please enter your full delivery address.');
+      return;
+    }
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      closeCheckout();
+      openLogin();
+      return;
+    }
+
+    setIsSubmitting(true);
+
     const orderNumber = `LB-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
     const estimatedTime = new Date(Date.now() + 45 * 60000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const tax = cartTotal * 0.08;
     const gratuity = cartTotal * 0.18;
     const finalTotal = cartTotal + tax + gratuity;
-    
+
+    const customerAddress = orderType === 'delivery'
+      ? `${formData.address}, ${formData.city}${formData.notes ? ' — ' + formData.notes : ''}`
+      : `Takeaway — ${formData.notes || 'Pickup at restaurant'}`;
+
+    const { data, error } = await supabase
+      .from('orders')
+      .insert([
+        {
+          customer_name: formData.name,
+          customer_email: formData.email,
+          customer_phone: formData.phone,
+          customer_address: customerAddress,
+          items: cart,
+          total: parseFloat(finalTotal.toFixed(2)),
+          status: 'pending',
+          payment_method: 'Cash on Delivery',
+          user_id: user.id
+        }
+      ])
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Order insert error:', error);
+      setSubmitError('Failed to place order. Please try again.');
+      setIsSubmitting(false);
+      return;
+    }
+
     const newOrder = {
       number: orderNumber,
       status: 'kitchen',
@@ -40,7 +100,7 @@ export default function CheckoutModal() {
       customerName: formData.name,
       orderType
     };
-    
+
     setOrder(newOrder);
     setOrderReceipt({
       number: orderNumber,
@@ -52,6 +112,7 @@ export default function CheckoutModal() {
       total: finalTotal
     });
     clearCart();
+    setIsSubmitting(false);
     setStep('success');
   };
 
@@ -59,7 +120,8 @@ export default function CheckoutModal() {
     closeCheckout();
     setStep('selection');
     setOrderReceipt(null);
-    setFormData({ name: '', phone: '', address: '', city: '', notes: '' });
+    setSubmitError(null);
+    setFormData({ name: '', email: '', phone: '', address: '', city: '', notes: '' });
   };
 
   const tax = cartTotal * 0.08;
@@ -120,6 +182,13 @@ export default function CheckoutModal() {
                 </div>
               </div>
               <div>
+                <label className="block text-sm font-medium text-[#2d2420] mb-1.5">Email Address</label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#6b5b4f]" />
+                  <input type="email" required value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-[#e8ddd4] focus:border-[#8e4a0e] focus:ring-2 focus:ring-[#8e4a0e]/20 outline-none" placeholder="john@example.com" />
+                </div>
+              </div>
+              <div>
                 <label className="block text-sm font-medium text-[#2d2420] mb-1.5">Phone Number</label>
                 <div className="relative">
                   <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#6b5b4f]" />
@@ -148,13 +217,26 @@ export default function CheckoutModal() {
                 <label className="block text-sm font-medium text-[#2d2420] mb-1.5">Order Notes <span className="text-[#6b5b4f] font-normal">(optional)</span></label>
                 <textarea value={formData.notes} onChange={(e) => setFormData({...formData, notes: e.target.value})} rows={3} className="w-full px-4 py-2.5 rounded-lg border border-[#e8ddd4] focus:border-[#8e4a0e] focus:ring-2 focus:ring-[#8e4a0e]/20 outline-none resize-none" placeholder="Any special instructions..." />
               </div>
+              {submitError && (
+                <div className="text-sm text-red-600 bg-red-50 px-4 py-2.5 rounded-lg">
+                  {submitError}
+                </div>
+              )}
               <div className="pt-4 border-t border-[#e8ddd4]">
                 <div className="flex justify-between items-center mb-4">
                   <span className="text-[#6b5b4f]">Total Amount</span>
                   <span className="text-xl font-playfair text-[#8e4a0e]">${finalTotal.toFixed(2)}</span>
                 </div>
-                <button type="submit" className="w-full bg-[#8e4a0e] text-white py-3 rounded-lg font-medium hover:bg-[#6d3a0b] transition-colors flex items-center justify-center gap-2">
-                  <Check className="w-4 h-4" /> Place Order
+                <button type="submit" disabled={isSubmitting} className="w-full bg-[#8e4a0e] text-white py-3 rounded-lg font-medium hover:bg-[#6d3a0b] transition-colors flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed">
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" /> Placing Order...
+                    </>
+                  ) : (
+                    <>
+                      <Check className="w-4 h-4" /> Place Order
+                    </>
+                  )}
                 </button>
               </div>
             </form>

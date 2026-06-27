@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useApp } from '../hooks/useApp';
+import { signUp, signIn } from '../hooks/useSupabase';
 
 export default function LoginModal() {
-  const { isLoginOpen, closeLogin, user, login, logout } = useApp();
+  const { isLoginOpen, closeLogin, user, logout } = useApp();
   const [isSignup, setIsSignup] = useState(false);
   const [formData, setFormData] = useState({ name: '', email: '', password: '' });
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   // Close on Escape key
   useEffect(() => {
@@ -19,23 +22,35 @@ export default function LoginModal() {
 
   if (!isLoginOpen) return null;
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    login({ name: formData.name || formData.email.split('@')[0], email: formData.email });
-    setFormData({ name: '', email: '', password: '' });
+    setError('');
+    setLoading(true);
+
+    try {
+      if (isSignup) {
+        await signUp(formData.email, formData.password, formData.name);
+        setError('Check your email to confirm your account!');
+      } else {
+        await signIn(formData.email, formData.password);
+        closeLogin();
+      }
+      setFormData({ name: '', email: '', password: '' });
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Logged-in view inside modal
   if (user) {
     return (
       <div className="fixed inset-0 z-[60] flex items-center justify-center px-4">
-        {/* Backdrop */}
         <div 
           className="absolute inset-0 bg-bistro-espresso/60 backdrop-blur-sm transition-opacity" 
           onClick={closeLogin}
         />
-        
-        {/* Modal Card */}
         <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-md p-8 sm:p-10 border border-bistro-darkCream animate-[fadeIn_0.2s_ease-out]">
           <button 
             onClick={closeLogin}
@@ -55,7 +70,9 @@ export default function LoginModal() {
             <span className="font-dm text-xs tracking-[0.4em] text-bistro-terracotta uppercase block mb-2 font-semibold">
               Welcome Back
             </span>
-            <h2 className="font-playfair text-2xl text-bistro-espresso mb-1">Hello, {user.name}</h2>
+            <h2 className="font-playfair text-2xl text-bistro-espresso mb-1">
+              Hello, {user.user_metadata?.full_name || user.email?.split('@')[0]}
+            </h2>
             <p className="font-dm text-sm text-bistro-sage mb-8">{user.email}</p>
             
             <button 
@@ -73,15 +90,12 @@ export default function LoginModal() {
   // Login/Signup form
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center px-4">
-      {/* Backdrop */}
       <div 
         className="absolute inset-0 bg-bistro-espresso/60 backdrop-blur-sm transition-opacity" 
         onClick={closeLogin}
       />
       
-      {/* Modal Card */}
       <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-md p-8 sm:p-10 border border-bistro-darkCream animate-[fadeIn_0.2s_ease-out]">
-        {/* Close Button */}
         <button 
           onClick={closeLogin}
           className="absolute top-4 right-4 text-bistro-sage hover:text-bistro-terracotta transition-colors"
@@ -91,7 +105,6 @@ export default function LoginModal() {
           </svg>
         </button>
 
-        {/* Header */}
         <div className="text-center mb-8">
           <span className="font-dm text-xs tracking-[0.4em] text-bistro-terracotta uppercase block mb-2 font-semibold">
             {isSignup ? 'Join Us' : 'Welcome Back'}
@@ -103,6 +116,13 @@ export default function LoginModal() {
             {isSignup ? 'Start your culinary journey with us' : 'Access your reservations and orders'}
           </p>
         </div>
+
+        {/* Error message */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+            <p className="font-dm text-sm text-red-600 text-center">{error}</p>
+          </div>
+        )}
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -147,6 +167,7 @@ export default function LoginModal() {
               name="password" 
               placeholder="••••••••" 
               required
+              minLength={6}
               value={formData.password} 
               onChange={(e) => setFormData({...formData, password: e.target.value})}
               className="w-full px-4 py-3 rounded-lg bg-bistro-cream border border-bistro-darkCream focus:border-bistro-terracotta focus:ring-1 focus:ring-bistro-terracotta/20 focus:outline-none font-dm text-bistro-espresso placeholder:text-bistro-sage/50 text-sm transition-all"
@@ -155,18 +176,18 @@ export default function LoginModal() {
 
           <button 
             type="submit"
-            className="w-full bg-bistro-terracotta text-bistro-cream py-3.5 rounded-lg font-dm text-[12px] uppercase tracking-[0.15em] font-medium hover:bg-bistro-terracotta/90 transition-all duration-300 shadow-md mt-2"
+            disabled={loading}
+            className="w-full bg-bistro-terracotta text-bistro-cream py-3.5 rounded-lg font-dm text-[12px] uppercase tracking-[0.15em] font-medium hover:bg-bistro-terracotta/90 transition-all duration-300 shadow-md mt-2 disabled:opacity-50"
           >
-            {isSignup ? 'Create Account' : 'Sign In'}
+            {loading ? 'Please wait...' : (isSignup ? 'Create Account' : 'Sign In')}
           </button>
         </form>
 
-        {/* Toggle */}
         <div className="mt-6 pt-5 border-t border-bistro-darkCream text-center">
           <p className="font-dm text-sm text-bistro-sage">
             {isSignup ? 'Already have an account?' : "Don't have an account?"}{' '}
             <button 
-              onClick={() => setIsSignup(!isSignup)}
+              onClick={() => { setIsSignup(!isSignup); setError(''); }}
               className="text-bistro-terracotta font-medium hover:underline transition-all"
             >
               {isSignup ? 'Sign In' : 'Create Account'}

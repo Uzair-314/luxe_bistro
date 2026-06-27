@@ -1,40 +1,138 @@
 // src/pages/Reservations.jsx
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { submitReservation } from '../hooks/useSupabase';
-import { Calendar, Clock, Users, Phone, User, MessageSquare, Check } from 'lucide-react';
+import { supabase } from '../lib/supabaseClient';
+import { useApp } from '../hooks/useApp';
+import { Calendar, Clock, Users, Phone, User, AtSign, MessageSquare, Check, AlertCircle } from 'lucide-react';
 
 export default function Reservations() {
+  const { openLogin } = useApp();
+  const formContainerRef = useRef(null);
   const [submitted, setSubmitted] = useState(false);
   const [formData, setFormData] = useState({
     date: '',
     time: '',
-    partySize: '2',
+    guests: '2',
     phone: '',
     name: '',
+    email: '',
     requests: ''
   });
+  const [errors, setErrors] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
+
+  // Trigger slide-up animation on mount
+  useEffect(() => {
+    const timer = setTimeout(() => setIsVisible(true), 100);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Smooth scroll to form section when success message appears
+  useEffect(() => {
+    if (submitted && formContainerRef.current) {
+      formContainerRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [submitted]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: '' }));
+    }
+  };
+
+  const validateForm = () => {
+    const newErrors = {};
+
+    if (!formData.name.trim()) {
+      newErrors.name = 'Name is required';
+    } else if (formData.name.trim().length < 2) {
+      newErrors.name = 'Name must be at least 2 characters';
+    }
+
+    if (!formData.email.trim()) {
+      newErrors.email = 'Email is required';
+    } else {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(formData.email)) {
+        newErrors.email = 'Please enter a valid email address';
+      }
+    }
+
+    if (!formData.phone.trim()) {
+      newErrors.phone = 'Phone number is required';
+    } else {
+      const phoneRegex = /^\+?[0-9\s\-()]{7,20}$/;
+      if (!phoneRegex.test(formData.phone.trim())) {
+        newErrors.phone = 'Please enter a valid phone number (e.g., +1 (555) 000-0000).';
+      }
+    }
+
+    if (!formData.date) {
+      newErrors.date = 'Please select a date';
+    } else {
+      const selectedDate = new Date(formData.date);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (selectedDate < today) {
+        newErrors.date = 'Date cannot be in the past';
+      }
+    }
+
+    if (!formData.time) {
+      newErrors.time = 'Please select a time';
+    }
+
+    const guestsNum = parseInt(formData.guests, 10);
+    if (!guestsNum || guestsNum < 1) {
+      newErrors.guests = 'Party size must be at least 1';
+    } else if (guestsNum > 20) {
+      newErrors.guests = 'Party size cannot exceed 20';
+    }
+
+    if (formData.requests && formData.requests.length > 500) {
+      newErrors.requests = 'Special requests cannot exceed 500 characters';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (!validateForm()) {
+      return;
+    }
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      openLogin();
+      return;
+    }
+
+    setIsSubmitting(true);
+
     try {
       await submitReservation({
         date: formData.date,
         time: formData.time,
-        party_size: parseInt(formData.partySize, 10),
+        guests: parseInt(formData.guests, 10),
         phone: formData.phone,
         name: formData.name,
-        requests: formData.requests
+        email: formData.email,
+        special_requests: formData.requests
       });
+      setSubmitted(true);
+      setTimeout(() => setSubmitted(false), 5000);
     } catch (err) {
-      console.error("Failed to submit reservation to Supabase, falling back to local state success:", err);
+      console.error("Failed to submit reservation:", err);
+      setErrors({ submit: 'Failed to submit reservation. Please try again.' });
+    } finally {
+      setIsSubmitting(false);
     }
-    setSubmitted(true);
-    setTimeout(() => setSubmitted(false), 5000);
   };
 
   const timeSlots = [
@@ -43,6 +141,16 @@ export default function Reservations() {
     '5:30 PM', '6:00 PM', '6:30 PM', '7:00 PM',
     '7:30 PM', '8:00 PM', '8:30 PM', '9:00 PM'
   ];
+
+  const ErrorMessage = ({ field }) => {
+    if (!errors[field]) return null;
+    return (
+      <div className="flex items-center gap-1 mt-1.5 text-red-600 text-xs font-dm">
+        <AlertCircle className="w-3 h-3" />
+        <span>{errors[field]}</span>
+      </div>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-[#faf7f2]">
@@ -69,8 +177,10 @@ export default function Reservations() {
         </div>
       </div>
 
-      {/* Form Section */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 -mt-20 relative z-20 pb-24">
+      {/* Form Section with slide-up animation */}
+      <div className={`max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 -mt-20 relative z-20 pb-24 transition-all duration-700 ease-out ${
+        isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
+      }`}>
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden flex flex-col lg:flex-row">
           
           {/* Left Image Panel */}
@@ -92,7 +202,7 @@ export default function Reservations() {
           </div>
 
           {/* Right Form Panel */}
-          <div className="lg:w-3/5 p-8 md:p-12">
+          <div ref={formContainerRef} className="lg:w-3/5 p-8 md:p-12">
             {submitted ? (
               <div className="h-full flex flex-col items-center justify-center text-center py-12 animate-slide-up">
                 <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mb-6">
@@ -100,7 +210,7 @@ export default function Reservations() {
                 </div>
                 <h2 className="font-playfair text-2xl text-[#2d2420] mb-2">Reservation Confirmed</h2>
                 <p className="text-[#6b5b4f] font-dm max-w-md">
-                  Thank you, {formData.name}. We've received your reservation for {formData.partySize} guests on {formData.date} at {formData.time}. A confirmation will be sent to your phone.
+                  Thank you, {formData.name}. We've received your reservation for {formData.guests} guests on {formData.date} at {formData.time}. A confirmation will be sent to your phone.
                 </p>
               </div>
             ) : (
@@ -108,6 +218,14 @@ export default function Reservations() {
                 <h2 className="font-playfair text-2xl text-[#2d2420] mb-8">
                   Details of Your Visit
                 </h2>
+
+                {/* Submit error */}
+                {errors.submit && (
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 flex items-center gap-2 text-red-600 text-sm font-dm">
+                    <AlertCircle className="w-4 h-4" />
+                    {errors.submit}
+                  </div>
+                )}
 
                 <form onSubmit={handleSubmit} className="space-y-6">
                   {/* Row 1: Date & Time */}
@@ -125,9 +243,12 @@ export default function Reservations() {
                           value={formData.date}
                           onChange={handleChange}
                           min={new Date().toISOString().split('T')[0]}
-                          className="w-full pl-10 pr-4 py-3 bg-[#faf7f2] border border-[#e8ddd4] rounded-lg text-sm text-[#2d2420] font-dm focus:border-[#8e4a0e] focus:ring-2 focus:ring-[#8e4a0e]/20 outline-none transition-all"
+                          className={`w-full pl-10 pr-4 py-3 bg-[#faf7f2] border rounded-lg text-sm text-[#2d2420] font-dm focus:border-[#8e4a0e] focus:ring-2 focus:ring-[#8e4a0e]/20 outline-none transition-all ${
+                            errors.date ? 'border-red-400 focus:border-red-400 focus:ring-red-400/20' : 'border-[#e8ddd4]'
+                          }`}
                         />
                       </div>
+                      <ErrorMessage field="date" />
                     </div>
 
                     <div>
@@ -141,7 +262,9 @@ export default function Reservations() {
                           required
                           value={formData.time}
                           onChange={handleChange}
-                          className="w-full pl-10 pr-4 py-3 bg-[#faf7f2] border border-[#e8ddd4] rounded-lg text-sm text-[#2d2420] font-dm focus:border-[#8e4a0e] focus:ring-2 focus:ring-[#8e4a0e]/20 outline-none transition-all appearance-none cursor-pointer"
+                          className={`w-full pl-10 pr-4 py-3 bg-[#faf7f2] border rounded-lg text-sm text-[#2d2420] font-dm focus:border-[#8e4a0e] focus:ring-2 focus:ring-[#8e4a0e]/20 outline-none transition-all appearance-none cursor-pointer ${
+                            errors.time ? 'border-red-400 focus:border-red-400 focus:ring-red-400/20' : 'border-[#e8ddd4]'
+                          }`}
                         >
                           <option value="">Select a time</option>
                           {timeSlots.map(time => (
@@ -149,6 +272,7 @@ export default function Reservations() {
                           ))}
                         </select>
                       </div>
+                      <ErrorMessage field="time" />
                     </div>
                   </div>
 
@@ -161,16 +285,19 @@ export default function Reservations() {
                       <div className="relative">
                         <Users className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8e4a0e]" />
                         <select
-                          name="partySize"
-                          value={formData.partySize}
+                          name="guests"
+                          value={formData.guests}
                           onChange={handleChange}
-                          className="w-full pl-10 pr-4 py-3 bg-[#faf7f2] border border-[#e8ddd4] rounded-lg text-sm text-[#2d2420] font-dm focus:border-[#8e4a0e] focus:ring-2 focus:ring-[#8e4a0e]/20 outline-none transition-all appearance-none cursor-pointer"
+                          className={`w-full pl-10 pr-4 py-3 bg-[#faf7f2] border rounded-lg text-sm text-[#2d2420] font-dm focus:border-[#8e4a0e] focus:ring-2 focus:ring-[#8e4a0e]/20 outline-none transition-all appearance-none cursor-pointer ${
+                            errors.guests ? 'border-red-400 focus:border-red-400 focus:ring-red-400/20' : 'border-[#e8ddd4]'
+                          }`}
                         >
                           {[1,2,3,4,5,6,7,8,10,12].map(n => (
                             <option key={n} value={n}>{n} {n === 1 ? 'Guest' : 'Guests'}</option>
                           ))}
                         </select>
                       </div>
+                      <ErrorMessage field="guests" />
                     </div>
 
                     <div>
@@ -186,9 +313,12 @@ export default function Reservations() {
                           value={formData.phone}
                           onChange={handleChange}
                           placeholder="+1 (555) 000-0000"
-                          className="w-full pl-10 pr-4 py-3 bg-[#faf7f2] border border-[#e8ddd4] rounded-lg text-sm text-[#2d2420] font-dm placeholder:text-[#6b5b4f]/50 focus:border-[#8e4a0e] focus:ring-2 focus:ring-[#8e4a0e]/20 outline-none transition-all"
+                          className={`w-full pl-10 pr-4 py-3 bg-[#faf7f2] border rounded-lg text-sm text-[#2d2420] font-dm placeholder:text-[#6b5b4f]/50 focus:border-[#8e4a0e] focus:ring-2 focus:ring-[#8e4a0e]/20 outline-none transition-all ${
+                            errors.phone ? 'border-red-400 focus:border-red-400 focus:ring-red-400/20' : 'border-[#e8ddd4]'
+                          }`}
                         />
                       </div>
+                      <ErrorMessage field="phone" />
                     </div>
                   </div>
 
@@ -206,9 +336,34 @@ export default function Reservations() {
                         value={formData.name}
                         onChange={handleChange}
                         placeholder="Full Name"
-                        className="w-full pl-10 pr-4 py-3 bg-[#faf7f2] border border-[#e8ddd4] rounded-lg text-sm text-[#2d2420] font-dm placeholder:text-[#6b5b4f]/50 focus:border-[#8e4a0e] focus:ring-2 focus:ring-[#8e4a0e]/20 outline-none transition-all"
+                        className={`w-full pl-10 pr-4 py-3 bg-[#faf7f2] border rounded-lg text-sm text-[#2d2420] font-dm placeholder:text-[#6b5b4f]/50 focus:border-[#8e4a0e] focus:ring-2 focus:ring-[#8e4a0e]/20 outline-none transition-all ${
+                          errors.name ? 'border-red-400 focus:border-red-400 focus:ring-red-400/20' : 'border-[#e8ddd4]'
+                        }`}
                       />
                     </div>
+                    <ErrorMessage field="name" />
+                  </div>
+
+                  {/* Email */}
+                  <div>
+                    <label className="block text-[10px] uppercase tracking-[0.2em] text-[#6b5b4f] font-dm font-medium mb-2">
+                      Email Address
+                    </label>
+                    <div className="relative">
+                      <AtSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8e4a0e]" />
+                      <input
+                        type="email"
+                        name="email"
+                        required
+                        value={formData.email}
+                        onChange={handleChange}
+                        placeholder="hello@example.com"
+                        className={`w-full pl-10 pr-4 py-3 bg-[#faf7f2] border rounded-lg text-sm text-[#2d2420] font-dm placeholder:text-[#6b5b4f]/50 focus:border-[#8e4a0e] focus:ring-2 focus:ring-[#8e4a0e]/20 outline-none transition-all ${
+                          errors.email ? 'border-red-400 focus:border-red-400 focus:ring-red-400/20' : 'border-[#e8ddd4]'
+                        }`}
+                      />
+                    </div>
+                    <ErrorMessage field="email" />
                   </div>
 
                   {/* Special Requests */}
@@ -224,8 +379,14 @@ export default function Reservations() {
                         value={formData.requests}
                         onChange={handleChange}
                         placeholder="Dietary preferences, occasions, or seating requests..."
-                        className="w-full pl-10 pr-4 py-3 bg-[#faf7f2] border border-[#e8ddd4] rounded-lg text-sm text-[#2d2420] font-dm placeholder:text-[#6b5b4f]/50 focus:border-[#8e4a0e] focus:ring-2 focus:ring-[#8e4a0e]/20 outline-none transition-all resize-none"
+                        className={`w-full pl-10 pr-4 py-3 bg-[#faf7f2] border rounded-lg text-sm text-[#2d2420] font-dm placeholder:text-[#6b5b4f]/50 focus:border-[#8e4a0e] focus:ring-2 focus:ring-[#8e4a0e]/20 outline-none transition-all resize-none ${
+                          errors.requests ? 'border-red-400 focus:border-red-400 focus:ring-red-400/20' : 'border-[#e8ddd4]'
+                        }`}
                       />
+                    </div>
+                    <ErrorMessage field="requests" />
+                    <div className="text-right text-[10px] text-[#6b5b4f]/50 font-dm mt-1">
+                      {formData.requests.length}/500
                     </div>
                   </div>
 
@@ -233,10 +394,11 @@ export default function Reservations() {
                   <div className="pt-4">
                     <button
                       type="submit"
-                      className="w-full bg-[#8e4a0e] text-white py-4 rounded-lg font-dm font-medium text-sm uppercase tracking-[0.15em] hover:bg-[#6d3a0b] transition-all duration-300 flex items-center justify-center gap-2 shadow-lg shadow-[#8e4a0e]/20"
+                      disabled={isSubmitting}
+                      className="w-full bg-[#8e4a0e] text-white py-4 rounded-lg font-dm font-medium text-sm uppercase tracking-[0.15em] hover:bg-[#6d3a0b] transition-all duration-300 flex items-center justify-center gap-2 shadow-lg shadow-[#8e4a0e]/20 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      Confirm Reservation
-                      <Check className="w-4 h-4" />
+                      {isSubmitting ? 'Submitting...' : 'Confirm Reservation'}
+                      {!isSubmitting && <Check className="w-4 h-4" />}
                     </button>
                     <p className="text-center text-[11px] text-[#6b5b4f]/60 font-dm mt-4">
                       A confirmation will be sent via SMS and Email

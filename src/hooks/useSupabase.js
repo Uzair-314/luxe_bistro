@@ -64,3 +64,38 @@ export async function submitContact(contactData) {
   if (error) throw error;
   return data;
 }
+
+
+// Auth functions
+export async function signUp(email, password, name) {
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      data: { full_name: name }
+    }
+  });
+  
+  if (error) throw error;
+  return data;
+}
+
+export async function signIn(email, password) {
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password
+  });
+  
+  if (error) throw error;
+  return data;
+}
+
+export async function signOut() {
+  const { error } = await supabase.auth.signOut();
+  if (error) throw error;
+}
+
+export async function resetPassword(email) {
+  const { error } = await supabase.auth.resetPasswordForEmail(email);
+  if (error) throw error;
+}

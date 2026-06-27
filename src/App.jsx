@@ -1,5 +1,5 @@
-// src/App.jsx
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { useEffect } from 'react';
+import { BrowserRouter, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { AppProvider } from './context/AppContext';
 import ScrollToTop from './components/ScrollToTop';
 import Header from './components/Header';
@@ -14,11 +14,26 @@ import About from './pages/About';
 import Reservations from './pages/Reservations';
 import Gallery from './pages/Gallery';
 import Contact from './pages/Contact';
+import Profile from './pages/Profile';
+
+function RedirectToHome() {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    if (location.pathname !== '/') {
+      navigate('/', { replace: true });
+    }
+  }, []);
+
+  return null;
+}
 
 function App() {
   return (
     <AppProvider>
       <BrowserRouter>
+        <RedirectToHome />
         <ScrollToTop />
         <Header />
         <Routes>
@@ -28,6 +43,7 @@ function App() {
           <Route path="/reservations" element={<Reservations />} />
           <Route path="/gallery" element={<Gallery />} />
           <Route path="/contact" element={<Contact />} />
+          <Route path="/profile" element={<Profile />} />
         </Routes>
         <Footer />
         <CartDrawer />

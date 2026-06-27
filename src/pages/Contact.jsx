@@ -1,6 +1,7 @@
 // src/pages/Contact.jsx
 import { useState } from 'react';
-import { MapPin, Phone, Mail, Clock, Send, User, AtSign, MessageSquare } from 'lucide-react';
+import { MapPin, Phone, Mail, Clock, Send, User, AtSign, MessageSquare, AlertCircle } from 'lucide-react';
+import { submitContact } from '../hooks/useSupabase';
 
 export default function Contact() {
   const [formData, setFormData] = useState({
@@ -9,19 +10,82 @@ export default function Contact() {
     message: ''
   });
   const [submitted, setSubmitted] = useState(false);
+  const [errors, setErrors] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: '' }));
+    }
   };
 
-  const handleSubmit = (e) => {
+  const validateForm = () => {
+    const newErrors = {};
+
+    if (!formData.name.trim()) {
+      newErrors.name = 'Name is required';
+    } else if (formData.name.trim().length < 2) {
+      newErrors.name = 'Name must be at least 2 characters';
+    }
+
+    if (!formData.email.trim()) {
+      newErrors.email = 'Email is required';
+    } else {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(formData.email)) {
+        newErrors.email = 'Please enter a valid email address';
+      }
+    }
+
+    if (!formData.message.trim()) {
+      newErrors.message = 'Message is required';
+    } else if (formData.message.trim().length < 10) {
+      newErrors.message = 'Message must be at least 10 characters';
+    } else if (formData.message.length > 1000) {
+      newErrors.message = 'Message cannot exceed 1000 characters';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setSubmitted(true);
-    setTimeout(() => {
-      setSubmitted(false);
-      setFormData({ name: '', email: '', message: '' });
-    }, 4000);
+    
+    if (!validateForm()) return;
+
+    setIsSubmitting(true);
+
+    try {
+      await submitContact({
+        name: formData.name,
+        email: formData.email,
+        subject: 'General Inquiry',
+        message: formData.message
+      });
+      setSubmitted(true);
+      setTimeout(() => {
+        setSubmitted(false);
+        setFormData({ name: '', email: '', message: '' });
+      }, 4000);
+    } catch (err) {
+      console.error("Failed to submit contact:", err);
+      setErrors({ submit: 'Failed to send message. Please try again.' });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const ErrorMessage = ({ field }) => {
+    if (!errors[field]) return null;
+    return (
+      <div className="flex items-center gap-1 mt-1.5 text-red-600 text-xs font-dm">
+        <AlertCircle className="w-3 h-3" />
+        <span>{errors[field]}</span>
+      </div>
+    );
   };
 
   const infoCards = [
@@ -145,6 +209,15 @@ export default function Contact() {
               ) : (
                 <>
                   <h3 className="font-playfair text-2xl text-[#2d2420] mb-6">Send a Message</h3>
+                  
+                  {/* Submit error */}
+                  {errors.submit && (
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 flex items-center gap-2 text-red-600 text-sm font-dm">
+                      <AlertCircle className="w-4 h-4" />
+                      {errors.submit}
+                    </div>
+                  )}
+
                   <form onSubmit={handleSubmit} className="space-y-5">
                     <div className="grid sm:grid-cols-2 gap-5">
                       <div>
@@ -160,9 +233,12 @@ export default function Contact() {
                             value={formData.name}
                             onChange={handleChange}
                             placeholder="Julian Vane"
-                            className="w-full pl-10 pr-4 py-3 bg-[#faf7f2] border border-[#e8ddd4] rounded-lg text-sm text-[#2d2420] font-dm placeholder:text-[#6b5b4f]/40 focus:border-[#8e4a0e] focus:ring-2 focus:ring-[#8e4a0e]/20 outline-none transition-all"
+                            className={`w-full pl-10 pr-4 py-3 bg-[#faf7f2] border rounded-lg text-sm text-[#2d2420] font-dm placeholder:text-[#6b5b4f]/40 focus:border-[#8e4a0e] focus:ring-2 focus:ring-[#8e4a0e]/20 outline-none transition-all ${
+                              errors.name ? 'border-red-400 focus:border-red-400 focus:ring-red-400/20' : 'border-[#e8ddd4]'
+                            }`}
                           />
                         </div>
+                        <ErrorMessage field="name" />
                       </div>
                       <div>
                         <label className="block text-[10px] uppercase tracking-[0.2em] text-[#6b5b4f] font-dm font-medium mb-2">
@@ -177,9 +253,12 @@ export default function Contact() {
                             value={formData.email}
                             onChange={handleChange}
                             placeholder="julian@example.com"
-                            className="w-full pl-10 pr-4 py-3 bg-[#faf7f2] border border-[#e8ddd4] rounded-lg text-sm text-[#2d2420] font-dm placeholder:text-[#6b5b4f]/40 focus:border-[#8e4a0e] focus:ring-2 focus:ring-[#8e4a0e]/20 outline-none transition-all"
+                            className={`w-full pl-10 pr-4 py-3 bg-[#faf7f2] border rounded-lg text-sm text-[#2d2420] font-dm placeholder:text-[#6b5b4f]/40 focus:border-[#8e4a0e] focus:ring-2 focus:ring-[#8e4a0e]/20 outline-none transition-all ${
+                              errors.email ? 'border-red-400 focus:border-red-400 focus:ring-red-400/20' : 'border-[#e8ddd4]'
+                            }`}
                           />
                         </div>
+                        <ErrorMessage field="email" />
                       </div>
                     </div>
 
@@ -196,17 +275,24 @@ export default function Contact() {
                           value={formData.message}
                           onChange={handleChange}
                           placeholder="Tell us about your upcoming visit or inquiry..."
-                          className="w-full pl-10 pr-4 py-3 bg-[#faf7f2] border border-[#e8ddd4] rounded-lg text-sm text-[#2d2420] font-dm placeholder:text-[#6b5b4f]/40 focus:border-[#8e4a0e] focus:ring-2 focus:ring-[#8e4a0e]/20 outline-none transition-all resize-none"
+                          className={`w-full pl-10 pr-4 py-3 bg-[#faf7f2] border rounded-lg text-sm text-[#2d2420] font-dm placeholder:text-[#6b5b4f]/40 focus:border-[#8e4a0e] focus:ring-2 focus:ring-[#8e4a0e]/20 outline-none transition-all resize-none ${
+                            errors.message ? 'border-red-400 focus:border-red-400 focus:ring-red-400/20' : 'border-[#e8ddd4]'
+                          }`}
                         />
+                      </div>
+                      <ErrorMessage field="message" />
+                      <div className="text-right text-[10px] text-[#6b5b4f]/50 font-dm mt-1">
+                        {formData.message.length}/1000
                       </div>
                     </div>
 
                     <button
                       type="submit"
-                      className="bg-[#8e4a0e] text-white px-8 py-3 rounded-lg font-dm font-medium text-sm uppercase tracking-[0.15em] hover:bg-[#6d3a0b] transition-all duration-300 flex items-center gap-2 shadow-lg shadow-[#8e4a0e]/20"
+                      disabled={isSubmitting}
+                      className="bg-[#8e4a0e] text-white px-8 py-3 rounded-lg font-dm font-medium text-sm uppercase tracking-[0.15em] hover:bg-[#6d3a0b] transition-all duration-300 flex items-center gap-2 shadow-lg shadow-[#8e4a0e]/20 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      Dispatch Message
-                      <Send className="w-4 h-4" />
+                      {isSubmitting ? 'Sending...' : 'Dispatch Message'}
+                      {!isSubmitting && <Send className="w-4 h-4" />}
                     </button>
                   </form>
                 </>

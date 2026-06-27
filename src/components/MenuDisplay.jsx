@@ -7,7 +7,7 @@ import ScrollReveal from './ScrollReveal.jsx';
 const MENU_CATEGORIES = ['All', 'Starters', 'Mains', 'Desserts', 'Drinks'];
 
 export default function MenuDisplay() {
-  const { addToCart } = useApp();
+  const { addToCart, user, openLogin } = useApp();
   const { items, loading, error } = useMenuItems();
   const [activeCategory, setActiveCategory] = useState('All');
 
@@ -114,10 +114,16 @@ export default function MenuDisplay() {
                   </div>
 
                   <button
-                    onClick={() => addToCart(item)}
+                    onClick={() => {
+                      if (!user) {
+                        openLogin();
+                      } else {
+                        addToCart(item);
+                      }
+                    }}
                     className="self-start font-dm text-[10px] tracking-widest uppercase font-semibold text-bistro-espresso hover:text-bistro-terracotta flex items-center gap-1.5 transition-colors group/btn"
                   >
-                    <span>Add To Order</span>
+                    <span>{user ? 'Add To Order' : 'Login to Order'}</span>
                     <svg className="w-3 h-3 transform group-hover/btn:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
                     </svg>
