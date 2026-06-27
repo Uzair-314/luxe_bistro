@@ -1,17 +1,25 @@
+// src/pages/Menu.jsx
+import { useState } from 'react';
 import ScrollReveal from '../components/ScrollReveal.jsx';
 import MenuDisplay from '../components/MenuDisplay.jsx';
+import { ImageSkeleton } from '../components/LoadingComponents.jsx';
 
 export default function Menu() {
+  const [heroLoaded, setHeroLoaded] = useState(false);
+
   return (
     <main className="bg-bistro-cream min-h-screen">
       {/* Hero Section with Background Image */}
       <section className="relative h-[60vh] min-h-[400px] w-full overflow-hidden flex items-center justify-center text-center px-5">
         {/* Background Image */}
         <div className="absolute inset-0 z-0">
+          {!heroLoaded && <ImageSkeleton className="absolute inset-0 w-full h-full" />}
           <img 
             alt="Menu background" 
-            className="w-full h-full object-cover object-center"
+            className={`w-full h-full object-cover object-center transition-opacity duration-700 ${heroLoaded ? 'opacity-100' : 'opacity-0'}`}
             src="https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=1920&h=1080&fit=crop"
+            onLoad={() => setHeroLoaded(true)}
+            onError={() => setHeroLoaded(true)}
           />
           <div className="absolute inset-0 bg-bistro-espresso/60"></div>
         </div>

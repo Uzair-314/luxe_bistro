@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useMenuItems } from '../hooks/useSupabase';
 import { useApp } from '../hooks/useApp';
 import ScrollReveal from './ScrollReveal.jsx';
+import { MenuRowGridSkeleton, ImageSkeleton } from './LoadingComponents.jsx';
 
 const MENU_CATEGORIES = ['All', 'Starters', 'Mains', 'Desserts', 'Drinks'];
 
@@ -10,17 +11,31 @@ export default function MenuDisplay() {
   const { addToCart, user, openLogin } = useApp();
   const { items, loading, error } = useMenuItems();
   const [activeCategory, setActiveCategory] = useState('All');
+  const [loadedImages, setLoadedImages] = useState(new Set());
 
   const filteredItems = activeCategory === 'All'
     ? items
     : items.filter(item => item.category === activeCategory);
 
+  const handleImageLoad = (id) => {
+    setLoadedImages(prev => new Set(prev).add(id));
+  };
+
   if (loading) {
     return (
-      <section id="menu-preview" className="py-24 bg-bistro-cream px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-bistro-terracotta mx-auto"></div>
-          <p className="mt-4 font-dm text-bistro-sage">Loading menu...</p>
+      <section id="menu-preview" className="py-24 bg-bistro-cream px-4 sm:px-6 lg:px-8 overflow-hidden">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16 space-y-4">
+            <div className="h-4 bg-bistro-darkCream rounded w-48 mx-auto animate-pulse" />
+            <div className="h-8 bg-bistro-darkCream rounded w-64 mx-auto animate-pulse" />
+            <div className="w-12 h-[1px] bg-bistro-darkCream mx-auto mt-4 animate-pulse" />
+          </div>
+          <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-4 mb-16">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="h-10 w-24 bg-bistro-darkCream rounded-lg animate-pulse" />
+            ))}
+          </div>
+          <MenuRowGridSkeleton count={4} />
         </div>
       </section>
     );
@@ -84,12 +99,17 @@ export default function MenuDisplay() {
             <ScrollReveal key={item.id} direction="up" delay={0}>
               <div className="group p-6 rounded-lg bg-bistro-darkCream/30 hover:bg-bistro-darkCream/60 transition-all duration-300 border border-bistro-darkCream flex gap-5 h-full">
                 {/* Image */}
-                <div className="w-24 h-24 rounded-lg bg-bistro-espresso/10 flex-shrink-0 overflow-hidden">
+                <div className="w-24 h-24 rounded-lg bg-bistro-espresso/10 flex-shrink-0 overflow-hidden relative">
+                  {!loadedImages.has(item.id) && <ImageSkeleton className="absolute inset-0 w-full h-full rounded-lg" />}
                   <img 
                     src={item.image_url || item.image} 
                     alt={item.name}
-                    className="w-full h-full object-cover"
-                    onError={(e) => { e.target.style.display = 'none'; }}
+                    className={`w-full h-full object-cover transition-opacity duration-300 ${loadedImages.has(item.id) ? 'opacity-100' : 'opacity-0'}`}
+                    onLoad={() => handleImageLoad(item.id)}
+                    onError={(e) => { 
+                      e.target.style.display = 'none'; 
+                      handleImageLoad(item.id);
+                    }}
                   />
                 </div>
 

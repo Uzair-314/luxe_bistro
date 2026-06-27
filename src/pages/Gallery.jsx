@@ -1,6 +1,7 @@
 // src/pages/Gallery.jsx
 import { useState } from 'react';
 import { X, ZoomIn } from 'lucide-react';
+import { ImageSkeleton } from '../components/LoadingComponents.jsx';
 
 const galleryImages = [
   {
@@ -79,6 +80,11 @@ const galleryImages = [
 
 export default function Gallery() {
   const [lightbox, setLightbox] = useState(null);
+  const [loadedImages, setLoadedImages] = useState(new Set());
+
+  const handleImageLoad = (idx) => {
+    setLoadedImages(prev => new Set(prev).add(idx));
+  };
 
   return (
     <div className="min-h-screen bg-[#faf7f2]">
@@ -104,11 +110,14 @@ export default function Gallery() {
               className="group relative rounded-xl overflow-hidden cursor-pointer bg-white shadow-sm border border-[#e8ddd4]/30 hover:shadow-xl hover:-translate-y-1 hover:border-[#8e4a0e]/20 transition-all duration-500"
               onClick={() => setLightbox(img)}
             >
-              <div className="aspect-[4/3] overflow-hidden">
+              <div className="aspect-[4/3] overflow-hidden relative bg-[#faf7f2]">
+                {!loadedImages.has(idx) && <ImageSkeleton className="absolute inset-0 w-full h-full" />}
                 <img 
                   src={img.src}
                   alt={img.title}
-                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                  className={`w-full h-full object-cover transition-all duration-700 group-hover:scale-110 ${loadedImages.has(idx) ? 'opacity-100' : 'opacity-0'}`}
+                  onLoad={() => handleImageLoad(idx)}
+                  onError={() => handleImageLoad(idx)}
                 />
               </div>
               

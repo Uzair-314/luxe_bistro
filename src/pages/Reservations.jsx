@@ -4,6 +4,7 @@ import { submitReservation } from '../hooks/useSupabase';
 import { supabase } from '../lib/supabaseClient';
 import { useApp } from '../hooks/useApp';
 import { Calendar, Clock, Users, Phone, User, AtSign, MessageSquare, Check, AlertCircle } from 'lucide-react';
+import { ImageSkeleton, LoadingButton } from '../components/LoadingComponents.jsx';
 
 export default function Reservations() {
   const { openLogin } = useApp();
@@ -21,6 +22,8 @@ export default function Reservations() {
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
+  const [heroLoaded, setHeroLoaded] = useState(false);
+  const [leftImageLoaded, setLeftImageLoaded] = useState(false);
 
   // Trigger slide-up animation on mount
   useEffect(() => {
@@ -156,11 +159,18 @@ export default function Reservations() {
     <div className="min-h-screen bg-[#faf7f2]">
       {/* Hero Section */}
       <div className="relative h-[50vh] min-h-[400px] flex items-center justify-center overflow-hidden">
+        {!heroLoaded && <div className="absolute inset-0 bg-[#2d2420] animate-pulse z-[5]" />}
         <div 
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+          className={`absolute inset-0 bg-cover bg-center bg-no-repeat transition-opacity duration-700 ${heroLoaded ? 'opacity-100' : 'opacity-0'}`}
           style={{ 
             backgroundImage: 'url("https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=80&w=2070&auto=format&fit=crop")' 
           }}
+        />
+        <img 
+          src="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=80&w=2070&auto=format&fit=crop"
+          className="hidden"
+          onLoad={() => setHeroLoaded(true)}
+          onError={() => setHeroLoaded(true)}
         />
         <div className="absolute inset-0 bg-black/60" />
         
@@ -185,10 +195,13 @@ export default function Reservations() {
           
           {/* Left Image Panel */}
           <div className="lg:w-2/5 relative min-h-[300px] lg:min-h-full">
+            {!leftImageLoaded && <ImageSkeleton className="absolute inset-0 w-full h-full z-[5]" />}
             <img 
               src="https://images.unsplash.com/photo-1414235077428-338989a2e8c0?q=80&w=2070&auto=format&fit=crop"
               alt="Restaurant interior"
-              className="absolute inset-0 w-full h-full object-cover"
+              className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ${leftImageLoaded ? 'opacity-100' : 'opacity-0'}`}
+              onLoad={() => setLeftImageLoaded(true)}
+              onError={() => setLeftImageLoaded(true)}
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
             <div className="absolute bottom-0 left-0 p-8">
@@ -392,14 +405,14 @@ export default function Reservations() {
 
                   {/* Submit */}
                   <div className="pt-4">
-                    <button
+                    <LoadingButton
                       type="submit"
-                      disabled={isSubmitting}
-                      className="w-full bg-[#8e4a0e] text-white py-4 rounded-lg font-dm font-medium text-sm uppercase tracking-[0.15em] hover:bg-[#6d3a0b] transition-all duration-300 flex items-center justify-center gap-2 shadow-lg shadow-[#8e4a0e]/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                      loading={isSubmitting}
+                      className="w-full py-4 shadow-lg shadow-[#8e4a0e]/20"
                     >
                       {isSubmitting ? 'Submitting...' : 'Confirm Reservation'}
                       {!isSubmitting && <Check className="w-4 h-4" />}
-                    </button>
+                    </LoadingButton>
                     <p className="text-center text-[11px] text-[#6b5b4f]/60 font-dm mt-4">
                       A confirmation will be sent via SMS and Email
                     </p>

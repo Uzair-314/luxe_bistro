@@ -1,8 +1,17 @@
 // src/pages/About.jsx
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Leaf, Hammer, Flame, MapPin, ArrowRight } from 'lucide-react';
+import { ImageSkeleton } from '../components/LoadingComponents.jsx';
 
 export default function About() {
+  const [loadedImages, setLoadedImages] = useState(new Set());
+  const [heroLoaded, setHeroLoaded] = useState(false);
+
+  const handleImageLoad = (key) => {
+    setLoadedImages(prev => new Set(prev).add(key));
+  };
+
   const values = [
     {
       icon: Leaf,
@@ -51,11 +60,18 @@ export default function About() {
     <div className="min-h-screen bg-[#faf7f2]">
       {/* Hero */}
       <div className="relative h-[60vh] min-h-[500px] flex items-center justify-center overflow-hidden">
+        {!heroLoaded && <div className="absolute inset-0 bg-[#2d2420] animate-pulse z-[5]" />}
         <div 
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+          className={`absolute inset-0 bg-cover bg-center bg-no-repeat transition-opacity duration-700 ${heroLoaded ? 'opacity-100' : 'opacity-0'}`}
           style={{ 
             backgroundImage: 'url("https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=80&w=2070&auto=format&fit=crop")' 
           }}
+        />
+        <img 
+          src="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=80&w=2070&auto=format&fit=crop"
+          className="hidden"
+          onLoad={() => setHeroLoaded(true)}
+          onError={() => setHeroLoaded(true)}
         />
         <div className="absolute inset-0 bg-black/50" />
         <div className="relative z-10 text-center px-4 animate-slide-up">
@@ -72,11 +88,14 @@ export default function About() {
       <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
         <div className="grid md:grid-cols-2 gap-12 items-center">
           <div className="relative">
-            <div className="aspect-[4/5] rounded-2xl overflow-hidden shadow-xl">
+            <div className="aspect-[4/5] rounded-2xl overflow-hidden shadow-xl bg-[#2d2420]/10 relative">
+              {!loadedImages.has('story') && <ImageSkeleton className="absolute inset-0 w-full h-full rounded-2xl" />}
               <img 
                 src="https://images.unsplash.com/photo-1464226184884-fa280b87c399?q=80&w=800&auto=format&fit=crop"
                 alt="Fresh harvest vegetables"
-                className="w-full h-full object-cover"
+                className={`w-full h-full object-cover transition-opacity duration-500 ${loadedImages.has('story') ? 'opacity-100' : 'opacity-0'}`}
+                onLoad={() => handleImageLoad('story')}
+                onError={() => handleImageLoad('story')}
               />
             </div>
             <div className="absolute -bottom-6 -right-6 w-32 h-32 bg-[#8e4a0e]/10 rounded-full -z-10" />
@@ -116,11 +135,14 @@ export default function About() {
               </button>
             </div>
             <div className="order-1 md:order-2 relative">
-              <div className="aspect-[3/4] rounded-2xl overflow-hidden shadow-xl">
+              <div className="aspect-[3/4] rounded-2xl overflow-hidden shadow-xl bg-[#2d2420]/10 relative">
+                {!loadedImages.has('chef') && <ImageSkeleton className="absolute inset-0 w-full h-full rounded-2xl" />}
                 <img 
                   src="https://images.unsplash.com/photo-1577219491135-ce391730fb2c?q=80&w=800&auto=format&fit=crop"
                   alt="Chef Julian Vane"
-                  className="w-full h-full object-cover"
+                  className={`w-full h-full object-cover transition-opacity duration-500 ${loadedImages.has('chef') ? 'opacity-100' : 'opacity-0'}`}
+                  onLoad={() => handleImageLoad('chef')}
+                  onError={() => handleImageLoad('chef')}
                 />
               </div>
               <div className="absolute -top-6 -left-6 w-24 h-24 bg-[#8e4a0e]/10 rounded-full -z-10" />
@@ -193,11 +215,14 @@ export default function About() {
 
                   {/* Image */}
                   <div className="[direction:ltr]">
-                    <div className="aspect-[16/10] rounded-xl overflow-hidden shadow-lg">
+                    <div className="aspect-[16/10] rounded-xl overflow-hidden shadow-lg bg-[#2d2420]/10 relative">
+                      {!loadedImages.has(`milestone-${idx}`) && <ImageSkeleton className="absolute inset-0 w-full h-full rounded-xl" />}
                       <img 
                         src={milestone.image}
                         alt={milestone.title}
-                        className="w-full h-full object-cover hover:scale-105 transition-transform duration-700"
+                        className={`w-full h-full object-cover hover:scale-105 transition-transform duration-700 ${loadedImages.has(`milestone-${idx}`) ? 'opacity-100' : 'opacity-0'}`}
+                        onLoad={() => handleImageLoad(`milestone-${idx}`)}
+                        onError={() => handleImageLoad(`milestone-${idx}`)}
                       />
                     </div>
                   </div>

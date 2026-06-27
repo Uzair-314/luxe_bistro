@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { MapPin, Phone, Mail, Clock, Send, User, AtSign, MessageSquare, AlertCircle } from 'lucide-react';
 import { submitContact } from '../hooks/useSupabase';
+import { LoadingButton, ImageSkeleton } from '../components/LoadingComponents.jsx';
 
 export default function Contact() {
   const [formData, setFormData] = useState({
@@ -12,6 +13,7 @@ export default function Contact() {
   const [submitted, setSubmitted] = useState(false);
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [mapLoaded, setMapLoaded] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -286,14 +288,14 @@ export default function Contact() {
                       </div>
                     </div>
 
-                    <button
+                    <LoadingButton
                       type="submit"
-                      disabled={isSubmitting}
-                      className="bg-[#8e4a0e] text-white px-8 py-3 rounded-lg font-dm font-medium text-sm uppercase tracking-[0.15em] hover:bg-[#6d3a0b] transition-all duration-300 flex items-center gap-2 shadow-lg shadow-[#8e4a0e]/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                      loading={isSubmitting}
+                      className="w-full shadow-lg shadow-[#8e4a0e]/20"
                     >
                       {isSubmitting ? 'Sending...' : 'Dispatch Message'}
                       {!isSubmitting && <Send className="w-4 h-4" />}
-                    </button>
+                    </LoadingButton>
                   </form>
                 </>
               )}
@@ -305,6 +307,7 @@ export default function Contact() {
             
             {/* Map Embed */}
             <div className="bg-white rounded-xl overflow-hidden shadow-sm border border-[#e8ddd4]/50 h-[300px] lg:h-[340px] relative">
+              {!mapLoaded && <ImageSkeleton className="absolute inset-0 w-full h-full z-[5]" />}
               <iframe
                 src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3153!2d-106.82!3d39.19!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMznCsDExJzI0LjAiTiAxMDbCsDQ5JzEyLjAiVw!5e0!3m2!1sen!2sus!4v1600000000000!5m2!1sen!2sus"
                 width="100%"
@@ -314,7 +317,8 @@ export default function Contact() {
                 loading="lazy"
                 referrerPolicy="no-referrer-when-downgrade"
                 title="Luxe Bistro Location"
-                className="absolute inset-0"
+                className={`absolute inset-0 transition-opacity duration-500 ${mapLoaded ? 'opacity-100' : 'opacity-0'}`}
+                onLoad={() => setMapLoaded(true)}
               />
               <div className="absolute bottom-4 left-4 right-4">
                 <div className="bg-white/95 backdrop-blur-sm rounded-lg p-3 shadow-lg flex items-center gap-3">

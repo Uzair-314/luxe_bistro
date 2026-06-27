@@ -1,11 +1,10 @@
 // src/pages/Home.jsx
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import ScrollReveal from '../components/ScrollReveal.jsx';
 import HeroSection from '../components/Hero.jsx';
 import MenuDisplay from '../components/MenuDisplay.jsx';
-
-// Single Home component — ensure scroll to top on mount
-// (behavior uses 'auto' for compatibility)
+import { ImageSkeleton, SectionLoader } from '../components/LoadingComponents.jsx';
 
 const features = [
   {
@@ -47,15 +46,45 @@ const features = [
   }
 ];
 
+const galleryImages = [
+  {
+    src: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=600&h=600&fit=crop',
+    alt: 'Luxe Bistro interior 1'
+  },
+  {
+    src: 'https://images.unsplash.com/photo-1559339352-11d035aa65de?w=600&h=600&fit=crop',
+    alt: 'Luxe Bistro interior 2'
+  },
+  {
+    src: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=600&h=600&fit=crop',
+    alt: 'Luxe Bistro interior 3'
+  },
+  {
+    src: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=600&h=600&fit=crop',
+    alt: 'Luxe Bistro interior 4'
+  }
+];
+
 export default function Home() {
-  return (    <main className="bg-bistro-cream min-h-screen">
+  const [aboutImageLoaded, setAboutImageLoaded] = useState(false);
+  const [galleryLoaded, setGalleryLoaded] = useState(Array(4).fill(false));
+
+  const handleGalleryLoad = (index) => {
+    setGalleryLoaded(prev => {
+      const next = [...prev];
+      next[index] = true;
+      return next;
+    });
+  };
+
+  return (
+    <main className="bg-bistro-cream min-h-screen">
       {/* 1. Hero */}
       <HeroSection />
-      
+
       {/* 2. Features / Promise Section */}
       <section className="py-24 px-4 sm:px-6 lg:px-8 bg-bistro-cream overflow-hidden">
         <div className="max-w-7xl mx-auto">
-          {/* Section Header */}
           <div className="text-center mb-16">
             <ScrollReveal direction="up" delay={0.1}>
               <h2 className="font-playfair text-4xl sm:text-5xl text-bistro-espresso tracking-wide mb-4">
@@ -72,27 +101,19 @@ export default function Home() {
             </ScrollReveal>
           </div>
 
-          {/* Feature Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {features.map((feature, index) => (
               <ScrollReveal key={index} direction="up" delay={0.1 * (index + 1)}>
                 <div className="group relative bg-bistro-darkCream/40 hover:bg-bistro-darkCream rounded-xl p-8 text-center transition-all duration-500 ease-out hover:-translate-y-2 hover:shadow-xl border border-transparent hover:border-bistro-terracotta/20">
-                  {/* Icon */}
                   <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-bistro-terracotta/10 text-bistro-terracotta mb-6 group-hover:bg-bistro-terracotta group-hover:text-bistro-cream transition-all duration-500">
                     {feature.icon}
                   </div>
-                  
-                  {/* Title */}
                   <h3 className="font-playfair text-2xl text-bistro-espresso mb-3 group-hover:text-bistro-terracotta transition-colors duration-500">
                     {feature.title}
                   </h3>
-                  
-                  {/* Description */}
                   <p className="font-dm text-sm text-bistro-sage leading-relaxed group-hover:text-bistro-espresso/80 transition-colors duration-500">
                     {feature.description}
                   </p>
-
-                  {/* Hover accent line */}
                   <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-0 h-[2px] bg-bistro-terracotta group-hover:w-1/2 transition-all duration-500 rounded-full"></div>
                 </div>
               </ScrollReveal>
@@ -103,7 +124,7 @@ export default function Home() {
 
       {/* 3. Menu Preview */}
       <MenuDisplay />
-      
+
       {/* 4. About / Story Section */}
       <section className="py-24 px-4 sm:px-6 lg:px-8 bg-bistro-darkCream overflow-hidden">
         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
@@ -113,25 +134,21 @@ export default function Home() {
                 Our Story
               </span>
             </ScrollReveal>
-            
             <ScrollReveal direction="left" delay={0.2}>
               <h2 className="font-playfair text-4xl sm:text-5xl text-bistro-espresso tracking-wide mb-6">
                 Rooted in Tradition, <br/>Elevated by Craft
               </h2>
             </ScrollReveal>
-            
             <ScrollReveal direction="left" delay={0.3}>
               <p className="font-dm text-bistro-sage leading-relaxed mb-6">
                 Founded in 2018, Luxe Bistro began as a humble farm-to-table vision. Today, we honor that legacy by sourcing ingredients from local artisans and transforming them into dishes that tell the story of our land.
               </p>
             </ScrollReveal>
-            
             <ScrollReveal direction="left" delay={0.4}>
               <p className="font-dm text-bistro-sage leading-relaxed mb-8">
                 Every plate is a conversation between tradition and innovation — where rustic techniques meet modern refinement.
               </p>
             </ScrollReveal>
-            
             <ScrollReveal direction="left" delay={0.5}>
               <Link 
                 to="/about"
@@ -141,15 +158,20 @@ export default function Home() {
               </Link>
             </ScrollReveal>
           </div>
-          
+
           <div className="order-1 lg:order-2">
             <ScrollReveal direction="right" delay={0.2}>
-              <div className="aspect-[4/5] rounded-lg bg-bistro-espresso/10 overflow-hidden">
+              <div className="aspect-[4/5] rounded-lg bg-bistro-espresso/10 overflow-hidden relative">
+                {!aboutImageLoaded && <ImageSkeleton className="absolute inset-0 w-full h-full rounded-lg" />}
                 <img 
                   src="https://images.unsplash.com/photo-1577219491135-ce391730fb2c?w=800&h=1000&fit=crop" 
                   alt="Luxe Bistro Chef"
-                  className="w-full h-full object-cover"
-                  onError={(e) => { e.target.parentElement.classList.add('bg-bistro-espresso/20'); }}
+                  className={`w-full h-full object-cover transition-opacity duration-500 ${aboutImageLoaded ? 'opacity-100' : 'opacity-0'}`}
+                  onLoad={() => setAboutImageLoaded(true)}
+                  onError={(e) => { 
+                    e.target.parentElement.classList.add('bg-bistro-espresso/20'); 
+                    setAboutImageLoaded(true);
+                  }}
                 />
               </div>
             </ScrollReveal>
@@ -164,19 +186,16 @@ export default function Home() {
             Reserve Your Table
           </span>
         </ScrollReveal>
-        
         <ScrollReveal direction="up" delay={0.2}>
           <h2 className="font-playfair text-4xl sm:text-5xl text-bistro-cream tracking-wide mb-6">
             An Evening Awaits
           </h2>
         </ScrollReveal>
-        
         <ScrollReveal direction="up" delay={0.3}>
           <p className="font-dm text-bistro-cream/70 max-w-2xl mx-auto mb-10 leading-relaxed">
             Whether it's an intimate dinner for two or a celebration with friends, we curate every detail to make your evening unforgettable.
           </p>
         </ScrollReveal>
-        
         <ScrollReveal direction="up" delay={0.4}>
           <Link 
             to="/reservations"
@@ -196,7 +215,6 @@ export default function Home() {
                 The Atmosphere
               </span>
             </ScrollReveal>
-            
             <ScrollReveal direction="up" delay={0.2}>
               <h2 className="font-playfair text-4xl md:text-5xl text-bistro-espresso tracking-wide">
                 Gallery
@@ -205,30 +223,16 @@ export default function Home() {
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {[
-              {
-                src: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=600&h=600&fit=crop',
-                alt: 'Luxe Bistro interior 1'
-              },
-              {
-                src: 'https://images.unsplash.com/photo-1559339352-11d035aa65de?w=600&h=600&fit=crop',
-                alt: 'Luxe Bistro interior 2'
-              },
-              {
-                src: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=600&h=600&fit=crop',
-                alt: 'Luxe Bistro interior 3'
-              },
-              {
-                src: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=600&h=600&fit=crop',
-                alt: 'Luxe Bistro interior 4'
-              }
-            ].map((img, i) => (
+            {galleryImages.map((img, i) => (
               <ScrollReveal key={i} direction="up" delay={0.1 * (i + 1)}>
                 <Link to="/gallery" className="group block relative aspect-square rounded-xl overflow-hidden bg-bistro-espresso/10">
+                  {!galleryLoaded[i] && <ImageSkeleton className="absolute inset-0 w-full h-full rounded-xl" />}
                   <img 
                     src={img.src} 
                     alt={img.alt}
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                    className={`w-full h-full object-cover transition-all duration-700 group-hover:scale-110 ${galleryLoaded[i] ? 'opacity-100' : 'opacity-0'}`}
+                    onLoad={() => handleGalleryLoad(i)}
+                    onError={() => handleGalleryLoad(i)}
                   />
                   <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-all duration-500 flex items-center justify-center">
                     <span className="text-white text-xs uppercase tracking-[0.2em] font-dm font-medium">View</span>

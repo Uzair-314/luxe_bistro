@@ -8,6 +8,7 @@ import {
   DollarSign, LogOut, Edit2, Check, X, ChefHat, Lock, Eye, EyeOff,
   ChevronDown
 } from 'lucide-react';
+import { SectionLoader, LoadingButton, OrderItemSkeleton } from '../components/LoadingComponents.jsx';
 
 export default function Profile() {
   const { user, logout } = useApp();
@@ -20,6 +21,7 @@ export default function Profile() {
   const [updateError, setUpdateError] = useState(null);
   const [updateSuccess, setUpdateSuccess] = useState(false);
   const [showOrderHistory, setShowOrderHistory] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Password change states
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -95,6 +97,7 @@ export default function Profile() {
   const handleUpdateProfile = async () => {
     setUpdateError(null);
     setUpdateSuccess(false);
+    setIsSaving(true);
 
     const { error } = await supabase.auth.updateUser({
       data: {
@@ -112,6 +115,7 @@ export default function Profile() {
       setIsEditing(false);
       setTimeout(() => setUpdateSuccess(false), 3000);
     }
+    setIsSaving(false);
   };
 
   const handleCancelEdit = () => {
@@ -200,9 +204,16 @@ export default function Profile() {
         </div>
 
         {loading ? (
-          <div className="text-center py-20">
-            <div className="w-10 h-10 border-2 border-[#8e4a0e] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-            <p className="text-[#6b5b4f] font-dm text-sm">Loading your profile...</p>
+          <div className="space-y-6">
+            <div className="bg-white rounded-2xl shadow-lg p-6 md:p-8">
+              <SectionLoader text="Loading your profile..." />
+            </div>
+            <div className="bg-white rounded-2xl shadow-lg p-6 md:p-8">
+              <div className="space-y-4">
+                <OrderItemSkeleton />
+                <OrderItemSkeleton />
+              </div>
+            </div>
           </div>
         ) : (
           <div className="space-y-6">
@@ -225,9 +236,11 @@ export default function Profile() {
                   <div className="flex items-center gap-2">
                     <button 
                       onClick={handleUpdateProfile}
-                      className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.15em] font-dm font-medium text-green-600 hover:text-green-700 transition-colors cursor-pointer"
+                      disabled={isSaving}
+                      className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.15em] font-dm font-medium text-green-600 hover:text-green-700 transition-colors cursor-pointer disabled:opacity-50"
                     >
-                      <Check className="w-3.5 h-3.5" /> Save
+                      {isSaving ? <div className="w-3.5 h-3.5 border-2 border-green-600 border-t-transparent rounded-full animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+                      {isSaving ? 'Saving...' : 'Save'}
                     </button>
                     <button 
                       onClick={handleCancelEdit}
@@ -528,13 +541,13 @@ export default function Profile() {
                 </div>
               </div>
 
-              <button
+              <LoadingButton
                 type="submit"
-                disabled={isChangingPassword}
-                className="w-full bg-[#8e4a0e] text-white py-3 rounded-lg font-dm text-sm uppercase tracking-[0.15em] font-medium hover:bg-[#6d3a0b] transition-colors disabled:opacity-50 mt-2"
+                loading={isChangingPassword}
+                className="w-full mt-2"
               >
                 {isChangingPassword ? 'Updating...' : 'Update Password'}
-              </button>
+              </LoadingButton>
             </form>
           </div>
         </div>
