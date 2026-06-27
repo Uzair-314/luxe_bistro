@@ -5,6 +5,7 @@ import ScrollReveal from '../components/ScrollReveal.jsx';
 import HeroSection from '../components/Hero.jsx';
 import MenuDisplay from '../components/MenuDisplay.jsx';
 import { ImageSkeleton, SectionLoader } from '../components/LoadingComponents.jsx';
+import ReviewsSection from '../components/ReviewsSection.jsx';
 
 const features = [
   {
@@ -205,6 +206,7 @@ export default function Home() {
           </Link>
         </ScrollReveal>
       </section>
+       <ReviewsSection />
 
       {/* 6. Gallery Preview */}
       <section className="py-24 px-4 sm:px-6 lg:px-8 bg-bistro-cream overflow-hidden">
