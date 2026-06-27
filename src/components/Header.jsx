@@ -23,11 +23,10 @@ export default function Header() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // FIX: Close mobile menu ONLY when location changes, NOT when isMobileMenuOpen changes
   useEffect(() => {
-    if (isMobileMenuOpen) {
-      setIsMobileMenuOpen(false);
-    }
-  }, [location, isMobileMenuOpen]);
+    setIsMobileMenuOpen(false);
+  }, [location]);
 
   // Close user dropdown when clicking outside
   useEffect(() => {
@@ -39,6 +38,18 @@ export default function Header() {
     window.addEventListener('click', handleClickOutside);
     return () => window.removeEventListener('click', handleClickOutside);
   }, []);
+
+  // Prevent body scroll when mobile menu is open
+  useEffect(() => {
+    if (isMobileMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isMobileMenuOpen]);
 
   const handleLogout = () => {
     setIsUserMenuOpen(false);
@@ -73,14 +84,15 @@ export default function Header() {
       <nav 
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ease-in-out ${getNavClasses()}`}
       >
-        <div className="max-w-7xl mx-auto px-6 flex justify-between items-center">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 flex justify-between items-center">
           
           <Link to="/" className="flex flex-col">
-            <span className="font-playfair text-xl tracking-wider text-bistro-cream font-bold">LUXE BISTRO</span>
-            <span className="text-[9px] tracking-[0.3em] text-bistro-terracotta uppercase font-medium font-dm">Hearth & Harvest</span>
+            <span className="font-playfair text-lg sm:text-xl tracking-wider text-bistro-cream font-bold">LUXE BISTRO</span>
+            <span className="text-[8px] sm:text-[9px] tracking-[0.3em] text-bistro-terracotta uppercase font-medium font-dm">Hearth & Harvest</span>
           </Link>
 
-          <div className="hidden md:flex items-center gap-8 text-[11px] uppercase tracking-[0.2em] text-bistro-cream/90 font-medium font-dm">
+          {/* Desktop Nav */}
+          <div className="hidden md:flex items-center gap-6 lg:gap-8 text-[11px] uppercase tracking-[0.2em] text-bistro-cream/90 font-medium font-dm">
             {navLinks.map((link) => (
               <Link 
                 key={link.path} 
@@ -94,7 +106,8 @@ export default function Header() {
             ))}
           </div>
 
-          <div className="hidden md:flex items-center gap-6">
+          {/* Desktop Actions */}
+          <div className="hidden md:flex items-center gap-4 lg:gap-6">
             {user ? (
               <div className="user-dropdown relative">
                 <button 
@@ -104,7 +117,7 @@ export default function Header() {
                   <div className="w-8 h-8 rounded-full bg-bistro-terracotta/20 flex items-center justify-center border border-bistro-terracotta/30">
                     <User className="w-4 h-4" />
                   </div>
-                  <span className="text-[11px] uppercase tracking-[0.2em] font-dm">
+                  <span className="text-[11px] uppercase tracking-[0.2em] font-dm hidden lg:inline">
                     {user.user_metadata?.full_name?.split(' ')[0] || user.email?.split('@')[0]}
                   </span>
                   <svg 
@@ -117,7 +130,6 @@ export default function Header() {
                   </svg>
                 </button>
 
-                {/* Dropdown - Only Settings */}
                 {isUserMenuOpen && (
                   <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-bistro-darkCream py-2 animate-[fadeIn_0.15s_ease-out]">
                     <div className="px-4 py-2 border-b border-bistro-darkCream">
@@ -145,7 +157,6 @@ export default function Header() {
               </button>
             )}
             
-            {/* Track Order Button */}
             <button 
               onClick={openTracking}
               className="relative text-bistro-cream hover:text-bistro-terracotta transition-colors"
@@ -156,7 +167,6 @@ export default function Header() {
               )}
             </button>
             
-            {/* Cart Button */}
             <button 
               onClick={openCart}
               className="relative text-bistro-cream hover:text-bistro-terracotta transition-colors"
@@ -172,9 +182,11 @@ export default function Header() {
             </button>
           </div>
 
+          {/* Mobile Hamburger */}
           <button 
-            className="md:hidden text-bistro-cream"
+            className="md:hidden text-bistro-cream p-2"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            aria-label="Toggle menu"
           >
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-7 h-7">
               {isMobileMenuOpen ? (
@@ -186,21 +198,32 @@ export default function Header() {
           </button>
 
         </div>
+      </nav>
 
-        {isMobileMenuOpen && (
-          <div className="md:hidden bg-bistro-espresso border-t border-bistro-cream/10">
-            <div className="px-6 py-4 flex flex-col gap-4">
+      {/* Mobile Menu Overlay */}
+      {isMobileMenuOpen && (
+        <>
+          {/* Backdrop */}
+          <div 
+            className="fixed inset-0 bg-bistro-espresso/50 backdrop-blur-sm z-40 md:hidden"
+            onClick={() => setIsMobileMenuOpen(false)}
+          />
+          {/* Mobile Menu Panel */}
+          <div className="fixed top-[60px] left-0 right-0 bottom-0 bg-bistro-espresso z-40 md:hidden overflow-y-auto animate-[slideDown_0.2s_ease-out]">
+            <div className="px-6 py-6 flex flex-col gap-4">
               {navLinks.map((link) => (
                 <Link 
                   key={link.path} 
                   to={link.path}
-                  className={`text-sm uppercase tracking-[0.2em] text-bistro-cream/90 hover:text-bistro-terracotta transition-colors font-dm ${
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className={`text-sm uppercase tracking-[0.2em] text-bistro-cream/90 hover:text-bistro-terracotta transition-colors font-dm py-2 ${
                     location.pathname === link.path ? 'text-bistro-terracotta' : ''
                   }`}
                 >
                   {link.label}
                 </Link>
               ))}
+              
               <div className="border-t border-bistro-cream/10 pt-4 flex flex-col gap-3">
                 {user ? (
                   <>
@@ -215,32 +238,44 @@ export default function Header() {
                     </div>
                     <button 
                       onClick={() => { setIsMobileMenuOpen(false); navigate('/profile'); }}
-                      className="text-left text-sm text-bistro-cream/90 hover:text-bistro-terracotta font-dm flex items-center gap-2"
+                      className="text-left text-sm text-bistro-cream/90 hover:text-bistro-terracotta font-dm flex items-center gap-2 py-2"
                     >
                       <Settings className="w-4 h-4" /> Settings
                     </button>
-                    <button onClick={handleLogout} className="text-left text-sm text-bistro-terracotta font-dm">
+                    <button onClick={() => { setIsMobileMenuOpen(false); handleLogout(); }} className="text-left text-sm text-bistro-terracotta font-dm py-2">
                       Logout
                     </button>
                   </>
                 ) : (
-                  <button onClick={openLogin} className="text-sm uppercase tracking-[0.2em] text-bistro-cream/90 hover:text-bistro-terracotta font-dm">
+                  <button 
+                    onClick={() => { setIsMobileMenuOpen(false); openLogin(); }}
+                    className="text-sm uppercase tracking-[0.2em] text-bistro-cream/90 hover:text-bistro-terracotta font-dm py-2 text-left"
+                  >
                     Login
                   </button>
                 )}
-                <div className="flex items-center justify-between pt-2">
-                  <button onClick={openTracking} className="text-bistro-cream hover:text-bistro-terracotta relative">
+                
+                <div className="flex items-center gap-6 pt-4 border-t border-bistro-cream/10">
+                  <button 
+                    onClick={() => { setIsMobileMenuOpen(false); openTracking(); }}
+                    className="text-bistro-cream hover:text-bistro-terracotta relative flex items-center gap-2"
+                  >
                     <MapPin className="w-5 h-5" />
+                    <span className="text-sm font-dm">Track Order</span>
                     {currentOrder && (
-                      <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse" />
+                      <span className="absolute top-0 left-4 w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse" />
                     )}
                   </button>
-                  <button onClick={openCart} className="text-bistro-cream hover:text-bistro-terracotta relative">
+                  <button 
+                    onClick={() => { setIsMobileMenuOpen(false); openCart(); }}
+                    className="text-bistro-cream hover:text-bistro-terracotta relative flex items-center gap-2"
+                  >
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5V6a3.75 3.75 0 1 0-7.5 0v4.5m11.356-1.993 1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 0 1-1.12-1.243l1.264-12A1.125 1.125 0 0 1 5.513 7.5h12.974c.576 0 1.059.435 1.119 1.007ZM8.625 10.5a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm7.5 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
                     </svg>
+                    <span className="text-sm font-dm">Cart</span>
                     {cartItemCount > 0 && (
-                      <span className="absolute -top-2 -right-2 bg-bistro-terracotta text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center font-dm font-bold">
+                      <span className="absolute -top-2 left-4 bg-bistro-terracotta text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center font-dm font-bold">
                         {cartItemCount}
                       </span>
                     )}
@@ -249,8 +284,8 @@ export default function Header() {
               </div>
             </div>
           </div>
-        )}
-      </nav>
+        </>
+      )}
 
       {/* Logout Confirmation Modal */}
       {showLogoutConfirm && (
